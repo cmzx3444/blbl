@@ -202,6 +202,7 @@ internal class WebVideoApi(
             )
         val keys = transport.ensureWbiKeys()
         val url = transport.signedWbiUrl(path = "/x/player/wbi/v2", params = params, keys = keys)
+        var usedTryLookFallback = false
         val json =
             try {
                 transport.getJson(
@@ -211,6 +212,8 @@ internal class WebVideoApi(
                 )
             } catch (t: Throwable) {
                 if (t is CancellationException) throw t
+                usedTryLookFallback = true
+                AppLog.w(TAG, "playerInfo primary failed, fallback try_look bvid=${request.bvid} cid=${request.cid}", t)
                 params["try_look"] = "1"
                 val fallbackUrl = transport.signedWbiUrl(path = "/x/player/wbi/v2", params = params, keys = keys)
                 transport.getJson(
@@ -221,6 +224,12 @@ internal class WebVideoApi(
             }
         checkApiCode(json)
         val data = json.optJSONObject("data") ?: JSONObject()
+        val subtitleCount = data.optJSONObject("subtitle")?.optJSONArray("subtitles")?.length() ?: 0
+        AppLog.i(
+            TAG,
+            "playerInfo subtitle bvid=${request.bvid} cid=${request.cid} fallback=$usedTryLookFallback " +
+                "needLogin=${data.optBoolean("need_login_subtitle", false)} count=$subtitleCount",
+        )
         return withContext(Dispatchers.Default) { mapper.parsePlayerInfo(data = data, request = request) }
     }
 
