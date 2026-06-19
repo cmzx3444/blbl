@@ -833,6 +833,7 @@ class VideoDetailActivity : BaseActivity() {
         var imageViewer: VideoCommentImageViewerController? = null
         var controller: VideoCommentsPanelController? = null
         var handle: PopupHandle? = null
+        var popupAttached = false
 
         handle =
             AppPopup.custom(
@@ -849,11 +850,13 @@ class VideoDetailActivity : BaseActivity() {
                         maxHeightRatio = 0.90f,
                     ),
                 onModalAttached = {
+                    popupAttached = true
                     controller?.showRoot()
                     controller?.ensureLoaded()
                     controller?.focusRoot()
                 },
                 onDismiss = {
+                    popupAttached = false
                     controller?.release()
                     if (commentsPopupController === controller) commentsPopupController = null
                     if (commentsPopupImageViewerController === imageViewer) commentsPopupImageViewerController = null
@@ -910,7 +913,12 @@ class VideoDetailActivity : BaseActivity() {
                             oidProvider = { requestAid },
                             upMidProvider = { ownerMid ?: 0L },
                             imageViewer = imageViewer,
-                            isActive = { handle?.isShowing == true && !isFinishing && !isDestroyed },
+                            isActive = {
+                                popupAttached &&
+                                    !isFinishing &&
+                                    !isDestroyed &&
+                                    (handle == null || handle?.isShowing == true)
+                            },
                         )
 
                     b.root

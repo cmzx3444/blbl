@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import blbl.cat3399.R
 import blbl.cat3399.core.api.BiliApiException
+import blbl.cat3399.core.log.AppLog
 import blbl.cat3399.core.net.BiliClient
 import blbl.cat3399.core.note.NoteImageRepository
 import blbl.cat3399.core.ui.AppToast
@@ -442,6 +443,7 @@ internal class VideoCommentsPanelController(
                     }
                 } catch (t: Throwable) {
                     if (t is CancellationException) return@launch
+                    AppLog.w(LOG_TAG, "reloadComments failed oid=$oid sort=$commentSort", t)
                     AppToast.show(context, commentLoadErrorMessage(t))
                     if (commentsState.items.isEmpty()) {
                         views.hint.text = context.getString(R.string.player_comment_load_failed)
@@ -482,6 +484,7 @@ internal class VideoCommentsPanelController(
                     }
                 } catch (t: Throwable) {
                     if (t is CancellationException) return@launch
+                    AppLog.w(LOG_TAG, "loadMoreComments failed oid=$oid sort=$commentSort page=$nextPage", t)
                     AppToast.show(context, commentLoadErrorMessage(t))
                 } finally {
                     if (token == commentsFetchToken) commentsFetchJob = null
@@ -581,5 +584,9 @@ internal class VideoCommentsPanelController(
         val api = t as? BiliApiException
         return api?.apiMessage?.takeIf { it.isNotBlank() }
             ?: (t.message ?: context.getString(R.string.player_comment_load_failed))
+    }
+
+    private companion object {
+        private const val LOG_TAG = "VideoCommentsPanel"
     }
 }
